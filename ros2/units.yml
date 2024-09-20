@@ -1,0 +1,16 @@
+# mapping from g3 supported units (via https://github.com/convert-units/convert-units)
+# to one or more equivalent ROS2 publisher units
+ft: feet
+deg: degrees
+rad: radians
+knot: knots
+R: rankine
+rpm: Rpm
+inHg: 
+  - inHG
+  - inches of mercury
+rad/s: radians per second
+ft/min: feet/minute
+ft/s: feet/second
+hPa: millibars
+gal: gallons

@@ -1,0 +1,225 @@
+# Maps ROS2 Topics to gauges.  Metric units are auto-discovered,
+# or can be overridden by specifying a `unit` for the metric.
+# Raw simvar values can be transformed by specifying
+# a python expression as 'fx', where the raw value is passed as a variable `x`
+# See README.me for more details.
+metrics:
+  # Nav panel
+  - metric: heading
+    simvar: HEADING INDICATOR
+
+  - metric: altitude
+    simvar: INDICATED ALTITUDE
+
+  - metric: pressureSetting
+    simvar: BAROMETER PRESSURE
+
+  - metric: pitch
+    simvar: ATTITUDE INDICATOR PITCH DEGREES
+
+  - metric: roll
+    simvar: ATTITUDE INDICATOR BANK DEGREES
+
+  - metric: turnrate
+    simvar: TURN INDICATOR RATE
+
+  - metric: slip
+    simvar: TURN COORDINATOR BALL
+    fx: x / 5  # simvar is position in [-128, 128], roughly to degrees [-25, 25]
+    fxunit: deg
+
+  - metric: airspeed
+    simvar: AIRSPEED INDICATED
+
+  - metric: verticalSpeed
+    simvar: VERTICAL SPEED
+
+  # ADF gauge
+  - metric: relativeADF
+    simvar: ADF RADIAL
+  - metric: headingADF
+    simvar: ADF CARD
+
+  # VOR gauge
+  - metric: radialVOR
+    simvar: NAV RADIAL
+  - metric: radialDeviation
+    simvar: NAV RADIAL ERROR
+  - metric: toFromVOR  # G3 wants -1 = from, 0 = unreliable, 1 = to
+    fx: -1 if x == 2 else x
+    fxunit: None
+    simvar: NAV TOFROM  # 0 off 1 = to 2 = from
+
+  # compass not physically implemented yet
+  - metric: compass
+    simvar: MAGNETIC COMPASS
+
+  # central panel
+  - metric: suctionPressure
+    simvar: SUCTION PRESSURE
+
+  - metric: fuel.front
+    simvar: "FUEL SELECTED QUANTITY:2"  # left
+  - metric: fuel.center
+    simvar: "FUEL SELECTED QUANTITY:3"  # right
+  - metric: fuel.rear
+    simvar: "FUEL SELECTED QUANTITY:6"  # center
+  - metric: fuelSelector
+    simvar: "FUEL TANK SELECTOR:1"
+    #TODO 1 == all
+    fx: "{1: 'front', 2: 'front', 3: 'center', 6: 'rear'}.get(x)"
+    fxunit: None
+  - metric: fuelPressure
+    unit: psi
+    simvar: "ENG FUEL PRESSURE:1"
+  - metric: oilPressure
+    unit: psi
+    simvar: "ENG OIL PRESSURE:1"
+  - metric: oilTemperature
+    simvar: "ENG OIL TEMPERATURE:1"
+
+  - metric: manifoldPressure
+    simvar: "ENG MANIFOLD PRESSURE:1"
+
+  - metric: engineRPM
+    simvar: "GENERAL ENG RPM:1"
+
+  - metric: cylinderHeadTemp
+    simvar: "ENG CYLINDER HEAD TEMPERATURE:1"
+
+  - metric: fuelWarning  # red fuel pressure warning light
+    simvar: WARNING FUEL
+
+  - metric: oilPressureWarning  # orange?
+    simvar: WARNING OIL PRESSURE
+
+todo:
+  #TODO align date / time units with G3
+  - metric: midnightSecondsUTC
+    dref: sim/time/zulu_time_sec
+    unit: s
+
+  - metric: midnightSecondsLocal
+    dref: sim/time/local_time_sec
+    unit: s
+
+
+# Actions are rules which are triggered when input metrics change.
+# The simplest action is copying an input metric to an output metric.
+# The raw input value can be transformed by adding an `fx` key
+# with a python expression where `x` is the raw input.
+# FS2020 supports actions that trigger simulator events or set SimVars.
+# Specify `simvar:` to set a simulator variable.
+# Specify `event:` to trigger a simulator event.
+# Simple events are just called with no arguments, e.g. to toggle a value.
+# Add `method: set` to call the event with the input value as argument.
+# Add `method: incdec` to choose one of two events based on the sign of
+# the input value (the first event for positive values),
+# which will be called `abs(x)` times.
+
+actions:
+#  - input: ALT-BTN
+  - input: ALT-ROT
+    method: incdec  # choose event by sign of input and call abs(input) times
+    event: [KOHLSMAN_INC, KOHLSMAN_DEC] # inc/dec altimeter setting
+
+  - input: ATT-BTN
+    # default method is simply call of event
+    event: ATTITUDE_CAGE_BUTTON # Cages attitude indicator at 0 pitch and bank
+  - input: ATT-ROT
+    method: incdec
+    event: [ATTITUDE_BARS_POSITION_UP, ATTITUDE_BARS_POSITION_DOWN]
+
+#  - input: VOR-BTN
+  - input: VOR-ROT
+    method: incdec
+    event: [VOR1_OBI_INC, VOR1_OBI_DEC]
+
+#  - input: ADF-BTN
+  - input: ADF-ROT
+    method: incdec
+    event: [ADF_CARD_INC, ADF_CARD_DEC]
+
+#  - input: HDG-BTN   HEADING_BUG_SELECT ?
+  - input: HDG-ROT
+    method: incdec
+    event: [HEADING_BUG_INC, HEADING_BUG_DEC]
+    # or maybe GYRO_DRIFT_INC, GYRO_DRIFT_DEC ?
+
+
+  - input: MASTER0
+    simvar: "GENERAL ENG GENERATOR ACTIVE:1"  # master alternator
+
+  - input: MASTER1
+    simvar: "ELECTRICAL MASTER BATTERY"  # master battery
+
+  # KEY is a 6 position switch, where selected pos is 1-6 or 0 if none
+  # we want behavior like {off, right magneto, left magneto, both, and start}
+  # 0, 1 => off; 2=right mag; 3=left mag; 4=both mags; 5+=start
+  - input: KEY
+    fx: x >= 3
+    simvar: "RECIP ENG LEFT MAGNETO:1"
+  - input: KEY
+    fx: x == 2 or x >= 4
+    simvar: "RECIP ENG RIGHT MAGNETO:1"
+  - input: KEY
+    fx: x >= 5
+    method: set
+    event: STARTER_SET
+
+  - input: STARTER  #TODO switch duplicates key position?
+    method: set
+    event: STARTER_SET
+
+  - input: WOBBLE
+    #fx: TODO as a percentage
+    method: set
+    event: MANUAL_FUEL_PRESSURE_PUMP_SET
+
+  - input: PRIMER
+    simvar: "ENGINE PRIMER"  #TODO engine primer position
+
+  - input: MIXTURE
+    #fx: TODO as a percentage
+    simvar: "GENERAL ENG MIXTURE LEVER POSITION:1"
+
+  - input: FUELSELECTOR
+    fx: "{0b00: 0, 0b01: 2, 0b10: 3, 0b11: 6}[x]"
+    method: set
+    event: FUEL_SELECTOR_SET
+
+  - input: SW1-1  #TODO instrument lights?
+    method: set
+    event: PARKING_BRAKE_SET # set parking brake on/off
+  - input: SW1-2
+    method: set
+    event: STROBES_SET
+  - input: SW1-3
+    method: set
+    event: LANDING_LIGHTS_SET
+
+  - input: SW2-1
+    method: set
+    event: BEACON_LIGHTS_SET
+  - input: SW2-2
+    method: set
+    event: NAV_LIGHTS_SET
+  - input: SW2-3
+    output: REAR_CABIN_LIGHTS  # physical led strip
+  - input: SW2-4
+    output: FRONT_CABIN_LIGHTS
+  - input: SW2-5
+    method: set
+    event: PITOT_HEAT_SET
+
+  - input: SW3-1
+    event: TOGGLE_ELECT_FUEL_PUMP  #TODO fuel pump?
+  - input: SW3-2
+    simvar: "RECIP ENG EMERGENCY BOOST ACTIVE:1"  # boost coil?
+#  - input: SW3-3
+#TODO starter?  radio master?
+
+  - input: fuelWarning
+    output: RED_WARNING
+  - input: oilPressureWarning
+    output: ORANGE_WARNING
