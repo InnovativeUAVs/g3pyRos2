@@ -1,5 +1,6 @@
 # mapping from g3 supported units (via https://github.com/convert-units/convert-units)
-# to one or more equivalent ROS2 publisher units
+# to one or more equivalent ROS2 units published by nhfms publishers
+
 ft: feet
 deg: degrees
 rad: radians
