@@ -1,4 +1,4 @@
-# this file from chatgpt
+# this file from chatgpt and might provide some guidance for changing fetch.py
 
 from g3py import G3App
 from ros2_data_subscriber import ROS2DataSubscriber

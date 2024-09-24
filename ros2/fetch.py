@@ -1,3 +1,8 @@
+# TODO: 
+# this file not yet changed
+# change references to simvar here and in ,apping.yml to rostopic
+# modify the SimConnect Link section
+
 from typing import Dict, List, Optional, Any
 import json
 from os import path

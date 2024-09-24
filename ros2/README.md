@@ -1,10 +1,11 @@
 Collect metrics from ROS2, using ROS2 subscriptions.
 
-MSFS provides many [SimVars](https://docs.flightsimulator.com/html/index.htm?#t=Programming_Tools%2FSimVars%2FSimulation_Variables.htm)
+This ros2 subfolder was created by copying the components of the fs2020 folder.
+In fs2020, MSFS provides many [SimVars](https://docs.flightsimulator.com/html/index.htm?#t=Programming_Tools%2FSimVars%2FSimulation_Variables.htm)
 which are mapped to G3 gauges via the mapping defined in `mapping.yml`.
-SimVars units should be discovered automatically and tranformed to
-match your specified gauge units.
+SimVars units should be discovered automatically and tranformed to match your specified gauge units.
 
+In the case of ros2 however, the data is coming from subscribers as specified in ros2_data_subscribers.py
 
 You can test your mapping by starting up your publishers and running.
 
